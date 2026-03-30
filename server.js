@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import cookieParser from "cookie-parser";
 
-// Route Imports
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
@@ -19,38 +19,39 @@ import adminRoutes from "./routes/adminRoutes.js";
 import placementRoutes from "./routes/placementRoutes.js";
 
 // ===============================
-// ✅ Load ENV
+// ✅ ENV + DB
 // ===============================
 dotenv.config();
-
-// ===============================
-// ✅ Connect DB
-// ===============================
 connectDB();
 
 const app = express();
 
 // ===============================
-// ✅ CORS (LOCAL + PRODUCTION)
+// ✅ CORS FIX (VERY IMPORTANT)
 // ===============================
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  process.env.FRONTEND_URL // Vercel URL from ENV
+  "https://easc-frontend-jade.vercel.app"
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
+    // allow requests without origin (postman, mobile apps)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // allow temporarily (safe for dev)
+      return callback(null, true);
     }
+
+    return callback(new Error("CORS not allowed"));
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
+
+// ✅ Preflight fix
+app.options("*", cors());
 
 // ===============================
 // ✅ Middlewares
@@ -67,22 +68,22 @@ app.use((req, res, next) => {
 });
 
 // ===============================
-// ✅ Uploads Folder Setup
+// ✅ Uploads folder
 // ===============================
 const uploadDir = path.join(path.resolve(), "uploads");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
-  console.log("✅ Created uploads folder");
+  console.log("✅ uploads folder created");
 }
 
 // ===============================
-// ✅ Static Files
+// ✅ Static
 // ===============================
 app.use("/uploads", express.static(uploadDir));
 
 // ===============================
-// ✅ API Routes
+// ✅ Routes
 // ===============================
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
@@ -96,30 +97,25 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/placements", placementRoutes);
 
 // ===============================
-// ✅ Root Route
+// ✅ Root
 // ===============================
 app.get("/", (req, res) => {
-  res.status(200).send("EASC Backend API Running 🚀");
+  res.send("EASC Backend API Running 🚀");
 });
 
 // ===============================
-// ✅ 404 Handler
+// ✅ 404
 // ===============================
 app.use((req, res) => {
-  res.status(404).json({
-    message: "Route not found ❌"
-  });
+  res.status(404).json({ message: "Route not found ❌" });
 });
 
 // ===============================
-// ✅ Global Error Handler
+// ✅ Error Handler
 // ===============================
 app.use((err, req, res, next) => {
-  console.error("❌ Server Error:", err.stack);
-
-  res.status(500).json({
-    message: err.message || "Internal Server Error"
-  });
+  console.error("❌ Error:", err.message);
+  res.status(500).json({ message: err.message || "Server Error" });
 });
 
 // ===============================
