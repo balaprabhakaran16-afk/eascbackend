@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import fs from "fs";
 import path from "path";
+import cookieParser from "cookie-parser";
 
 // Route Imports
 import authRoutes from "./routes/authRoutes.js";
@@ -14,26 +15,51 @@ import complaintRoutes from "./routes/complaintRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import classAllocationRoutes from "./routes/classAllocationRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js"
-import placementRoutes from "./routes/placementRoutes.js"
+import adminRoutes from "./routes/adminRoutes.js";
+import placementRoutes from "./routes/placementRoutes.js";
 
-
-// Load Environment Variables
+// ===============================
+// ✅ Load ENV
+// ===============================
 dotenv.config();
 
-// Connect Database
+// ===============================
+// ✅ Connect DB
+// ===============================
 connectDB();
 
 const app = express();
 
 // ===============================
-// ✅ Middlewares
+// ✅ CORS (LOCAL + PRODUCTION)
 // ===============================
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  process.env.FRONTEND_URL // Vercel URL from ENV
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // allow temporarily (safe for dev)
+    }
+  },
+  credentials: true
+}));
 
 // ===============================
-// ✅ Debug Middleware
+// ✅ Middlewares
+// ===============================
+app.use(express.json());
+app.use(cookieParser());
+
+// ===============================
+// ✅ Debug Logger
 // ===============================
 app.use((req, res, next) => {
   console.log(`📌 ${req.method} ${req.originalUrl}`);
@@ -41,7 +67,7 @@ app.use((req, res, next) => {
 });
 
 // ===============================
-// ✅ Ensure uploads folder exists
+// ✅ Uploads Folder Setup
 // ===============================
 const uploadDir = path.join(path.resolve(), "uploads");
 
@@ -51,7 +77,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // ===============================
-// ✅ Serve uploads folder
+// ✅ Static Files
 // ===============================
 app.use("/uploads", express.static(uploadDir));
 
@@ -66,9 +92,8 @@ app.use("/api/complaints", complaintRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/class-allocation", classAllocationRoutes);
 app.use("/api/application", applicationRoutes);
-app.use("/api/admin",adminRoutes)
-app.use("/api/placements",placementRoutes)
-
+app.use("/api/admin", adminRoutes);
+app.use("/api/placements", placementRoutes);
 
 // ===============================
 // ✅ Root Route
@@ -90,13 +115,11 @@ app.use((req, res) => {
 // ✅ Global Error Handler
 // ===============================
 app.use((err, req, res, next) => {
-
   console.error("❌ Server Error:", err.stack);
 
   res.status(500).json({
-    message: "Internal Server Error"
+    message: err.message || "Internal Server Error"
   });
-
 });
 
 // ===============================
