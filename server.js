@@ -27,26 +27,25 @@ connectDB();
 const app = express();
 
 // ===============================
-// ✅ CORS FIX (VERY IMPORTANT)
+// ✅ CORS FIX (FINAL)
 // ===============================
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "https://easc-frontend-jade.vercel.app"
+  "https://easc-frontend-jade.vercel.app",
+  "https://easc-frontend-cyan.vercel.app"
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests without origin (postman, mobile apps)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
+    } else {
+      return callback(new Error("CORS not allowed"));
     }
-
-    return callback(new Error("CORS not allowed"));
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
 
